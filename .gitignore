@@ -1,4 +1,6 @@
 
+/.idea/
+
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
@@ -8,3 +10,7 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
+/node_modules/
+
+/public/xsd/

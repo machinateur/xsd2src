@@ -1,0 +1,124 @@
+{{ '<?php' }}
+
+namespace {{ namespace }};
+
+use JMS\Serializer\Annotation as Serializer;
+use JMS\Serializer\Metadata;
+
+/**
+ * Class {{ type.name|u.camel.title }}
+ *
+ * @Serializer\AccessType(type=Metadata\PropertyMetadata::ACCESS_TYPE_PUBLIC_METHOD)
+ * @Serializer\ExclusionPolicy(policy=Serializer\ExclusionPolicy::ALL)
+ *
+{% if (type.name in root_list) or (type.root) %}
+ * @Serializer\XmlRoot("{{ type.name }}")
+ *
+{% endif %}
+ * @package {{ namespace }}
+ * @link {{ 'https://github.com/machinateur/xsd2src' }}
+ */
+class {{ type.name|u.camel.title }}{% if (type.parent is not null and type.parent not in primitive_type_list) %} extends {{ type.parent|u.camel.title }}
+{
+{% else %}
+
+{
+{% endif %}
+{% for attribute in type.attributeList %}
+    /**
+     * @var {{ attribute.type not in simple_type_map ? attribute.type|u.camel.title : attribute.type }}{{ not attribute.required ? '|null' }}
+     *
+     * @Serializer\Type("{{ attribute.type }}")
+     * @Serializer\SerializedName("{{ attribute.name }}")
+     * @Serializer\Expose()
+     *
+     * @Serializer\XmlAttribute()
+     */
+    protected $attribute{{ attribute.name|u.camel.title }};
+
+{% endfor %}
+{% for element in type.elementList %}
+    /**
+     * @var {{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }}{{ not element.required ? '|null' }}
+     *
+     * @Serializer\Type("{{ element.type }}")
+     * @Serializer\SerializedName("{{ element.name }}")
+     * @Serializer\Expose()
+     *
+     * @Serializer\XmlElement(cdata=false)
+     */
+    protected $element{{ element.name|u.camel.title }};
+
+{% endfor %}
+{% if (type.withContent or type.parent in primitive_type_list) %}
+    /**
+     * @var {{ type.parent }}
+     *
+     * @Serializer\Type("{{ type.parent }}")
+     * @Serializer\Expose()
+     *
+     * @Serializer\XmlValue(cdata=false)
+     */
+    protected $content;
+
+{% endif %}
+{% for attribute in type.attributeList %}
+    /**
+     * @return {{ attribute.type }}{{ not attribute.required ? '|null' }}
+     */
+    public function getAttribute{{ attribute.name|u.camel.title }}(): {{ not attribute.required ? '?' }}{{ attribute.type not in simple_type_map ? attribute.type|u.camel.title : attribute.type }}
+    {
+        return $this->attribute{{ attribute.name|u.camel.title }};
+    }
+
+    /**
+     * @param {{ attribute.type }}{{ not attribute.required ? '|null' }} $attribute{{ attribute.name|u.camel.title }}
+     * @return {{ type.name|u.camel.title }}
+     */
+    public function setAttribute{{ attribute.name|u.camel.title }}({{ not attribute.required ? '?' }}{{ attribute.type not in simple_type_map ? attribute.type|u.camel.title : attribute.type }} $attribute{{ attribute.name|u.camel.title }}): {{ type.name|u.camel.title }}
+    {
+        $this->attribute{{ attribute.name|u.camel.title }} = $attribute{{ attribute.name|u.camel.title }};
+        return $this;
+    }
+
+{% endfor %}
+{% for element in type.elementList %}
+    /**
+     * @return {{ element.type }}{{ not element.required ? '|null' }}
+     */
+    public function getElement{{ element.name|u.camel.title }}(): {{ not element.required ? '?' }}{{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }}
+    {
+        return $this->element{{ element.name|u.camel.title }};
+    }
+
+    /**
+     * @param {{ element.type }}{{ not element.required ? '|null' }} $element{{ element.name|u.camel.title }}
+     * @return {{ type.name|u.camel.title }}
+     */
+    public function setElement{{ element.name|u.camel.title }}({{ not element.required ? '?' }}{{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }} $element{{ element.name|u.camel.title }}): {{ type.name|u.camel.title }}
+    {
+        $this->element{{ element.name|u.camel.title }} = $element{{ element.name|u.camel.title }};
+        return $this;
+    }
+
+{% endfor %}
+{% if (type.withContent or type.parent in primitive_type_list) %}
+    /**
+     * @return {{ type.parent }}
+     */
+    public function getContent(): {{ type.parent }}
+    {
+        return $this->content;
+    }
+
+    /**
+     * @param $content {{ type.parent }}
+     * @return {{ type.name|u.camel.title }}
+     */
+    public function setContent({{ type.parent }} $content): {{ type.name|u.camel.title }}
+    {
+        $this->content = $content;
+        return $this;
+    }
+{% endif %}
+}
