@@ -7,11 +7,7 @@
 
 ### Schema structures and types
 
-[Understanding W3C Schema Complex Types](https://www.xml.com/pub/a/2001/08/22/easyschema.html)
-
-![The XSD type hierarchy](type-hierarchy.gif)
-
-[XML Schema Tutorial](https://www.w3schools.com/xml/schema_intro.asp)
+TODO
 
 ### Theory
 
@@ -34,6 +30,11 @@ The following table describes the supported structure variation:
 | `NodeHandleSimpleType`      |       |           |
 
 * `tle` = top level element
+
+### Useful read
+
+* [Understanding W3C Schema Complex Types](https://www.xml.com/pub/a/2001/08/22/easyschema.html)
+* [XML Schema Tutorial](https://www.w3schools.com/xml/schema_intro.asp)
 
 ## License
 
