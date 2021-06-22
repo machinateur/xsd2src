@@ -25,6 +25,11 @@ class Xsd2SrcCommand extends Command
     /**
      * @var string
      */
+    private const CTX_PRIMITIVE_TYPE_LIST = 'primitive_type_list';
+
+    /**
+     * @var string
+     */
     private const CTX_SIMPLE_TYPE_MAP = 'simple_type_map';
 
     protected static $defaultName = 'xsd2src';
@@ -84,13 +89,9 @@ class Xsd2SrcCommand extends Command
                 'Add one or more extra xsd.',
                 []
             )
-            ->addArgument('output-name', InputArgument::OPTIONAL,
-                'Set the output file name. Default to "xsd2src-result.zip".',
-                'xsd2src-result.zip'
-            )
-            ->addOption('zip', 'z', InputOption::VALUE_NEGATABLE,
+            ->addOption('zip', 'z', InputOption::VALUE_REQUIRED,
                 'Decide whether to compress the output as archive or not. Default to "false".',
-                false
+                null
             );
     }
 
@@ -179,14 +180,12 @@ class Xsd2SrcCommand extends Command
             }
         }
 
-        $argumentOutputName = $input->getArgument('output-name');
-        if (!str_ends_with($argumentOutputName, '.zip')) {
-            $argumentOutputName = $argumentOutputName . '.zip';
-
-            $output->writeln('! Add ".zip" suffix ("' . $argumentOutputName . '")...');
-        }
-
         $optionZip = $input->getOption('zip');
+        if (!str_ends_with($optionZip, '.zip')) {
+            $optionZip = $optionZip . '.zip';
+
+            $output->writeln('! Add ".zip" suffix ("' . $optionZip . '")...');
+        }
 
         $this->input = $input;
         $this->output = $output;
@@ -208,11 +207,16 @@ class Xsd2SrcCommand extends Command
 
         $typeMap = new TypeMap($context[self::CTX_SIMPLE_TYPE_MAP] ?? [], 'string');
 
+        $primitiveTypeList = $context[self::CTX_PRIMITIVE_TYPE_LIST] ?? [];
+        foreach ($primitiveTypeList as $primitiveType) {
+            $typeMap->entry($primitiveType, $primitiveType);
+        }
+
         try {
             $output->write('> Parse "' . $argumentInput . '"...');
 
             $content = $this->service->getModel($typeMap,
-                $this->getXsdFile($argumentInput)
+                $this->getFile($argumentInput)
                     ->getDocument()
             );
 
@@ -221,7 +225,7 @@ class Xsd2SrcCommand extends Command
             foreach ($optionWith as $optionWithValue) {
                 $output->write('> Parse "' . $optionWithValue . '"...');
                 $this->service->walk($content, $typeMap,
-                    $this->getXsdFile($optionWithValue)
+                    $this->getFile($optionWithValue)
                         ->getDocument()
                 );
                 $output->writeln(' done!');
@@ -230,22 +234,20 @@ class Xsd2SrcCommand extends Command
             // Warn about unresolved types.
             $output->writeln('> Analyse type map...');
 
-            $warnMessageList = $typeMap->getWarnMessageList($content);
-            foreach ($warnMessageList as $warnMessage) {
-                $output->writeln('! Warning: ' . $warnMessage);
+            $warningList = $typeMap->getWarningList($content);
+            foreach ($warningList as $warning) {
+                $output->writeln('! Warning: ' . $warning);
             }
 
             $output->writeln('^ Done!');
 
             if ($optionInitialize) {
-                $context[self::CTX_SIMPLE_TYPE_MAP] = $typeMap->getTypeMap();
-
                 $output->write('> Dump context...');
                 $this->dumpContext($content, $context, $argumentContext);
             } else {
                 $output->write('> Dump...');
                 $this->dump($content, $context, $argumentView, $argumentOutput, $argumentExtension,
-                    $optionZip, $argumentOutputName);
+                    null !== $optionZip, $optionZip);
             }
 
             $output->writeln(' done!');
@@ -328,7 +330,7 @@ class Xsd2SrcCommand extends Command
      * @param string $pathname
      * @return FileInterface
      */
-    private function getXsdFile(string $pathname): FileInterface
+    private function getFile(string $pathname): FileInterface
     {
         return new File($pathname);
     }
@@ -340,16 +342,7 @@ class Xsd2SrcCommand extends Command
      */
     private function dumpContext(Content $content, array &$context, string $argumentContext): void
     {
-        // Initialize the type map.
-        $context[self::CTX_SIMPLE_TYPE_MAP] = [];
-
-        $typeList = $content->getTypeList();
-        foreach ($typeList as $type) {
-            $attributeList = $type->getAttributeList();
-            foreach ($attributeList as $attribute) {
-                $context[self::CTX_SIMPLE_TYPE_MAP][$attribute->getType()] = 'string';
-            }
-        }
+        // TODO: Maybe implement smart type provisioning.
 
         $source = var_export($context, true);
         $source = <<<PHP

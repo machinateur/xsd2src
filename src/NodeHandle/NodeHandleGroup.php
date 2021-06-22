@@ -14,53 +14,9 @@ use LogicException;
 class NodeHandleGroup extends NodeHandleAbstract
 {
     use Addon\QueryTrait;
+    use Addon\ContentCacheTrait;
 
     protected static ?string $identifier = 'group';
-
-    private ?Content $contentCache;
-
-    /**
-     * NodeHandleGroup constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->contentCache = null;
-    }
-
-    /**
-     * @return Content
-     */
-    public function getContentCache(): Content
-    {
-        if (!$this->hasContentCache()) {
-            $this->setContentCache(
-                new Content()
-            );
-        }
-
-        return $this->contentCache;
-    }
-
-    /**
-     * @param Content $contentCache
-     * @return NodeHandleGroup
-     */
-    public function setContentCache(Content $contentCache): NodeHandleGroup
-    {
-        $this->contentCache = $contentCache;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasContentCache(): bool
-    {
-        return null !== $this->contentCache;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * @inheritDoc
@@ -77,6 +33,11 @@ class NodeHandleGroup extends NodeHandleAbstract
     public function handle(DOMElement $element, ?object $subject = null): void
     {
         switch (true) {
+
+            // If coming from schema...
+            case ($subject instanceof Content):
+                $this->handleContent($element, $subject);
+                break;
 
             // If coming from element...
             case ($subject instanceof Content\Type):
@@ -97,13 +58,14 @@ class NodeHandleGroup extends NodeHandleAbstract
         $modelContent = $this->getContentCache();
 
         $modelType = new Content\TypeProxy($name, true);
-        $modelType->setContentReference($subject); // TODO
+        $modelType->setContentReference($subject);
 
         $this->getNodeHandleChain()
             ->handleAll($element, $modelType);
 
         $modelType->setContentReference(null);
 
+        // Use the cache instead of the subject.
         $modelContent->addType($modelType);
     }
 

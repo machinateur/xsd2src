@@ -26,7 +26,7 @@ class {{ type.name|u.camel.title }}{% if (type.parent is not null and type.paren
 {% endif %}
 {% for attribute in type.attributeList %}
     /**
-     * @var {{ attribute.type not in simple_type_map ? attribute.type|u.camel.title : attribute.type }}{{ not attribute.required ? '|null' }}
+     * @var {{ attribute.type not in primitive_type_list ? attribute.type|u.camel.title : attribute.type }}{{ not attribute.required ? '|null' }}
      *
      * @Serializer\Type("{{ attribute.type }}")
      * @Serializer\SerializedName("{{ attribute.name }}")
@@ -38,8 +38,9 @@ class {{ type.name|u.camel.title }}{% if (type.parent is not null and type.paren
 
 {% endfor %}
 {% for element in type.elementList %}
+{% if element.singular %}
     /**
-     * @var {{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }}{{ not element.required ? '|null' }}
+     * @var {{ element.type not in primitive_type_list ? element.type|u.camel.title : element.type }}{{ not element.required ? '|null' }}
      *
      * @Serializer\Type("{{ element.type }}")
      * @Serializer\SerializedName("{{ element.name }}")
@@ -48,6 +49,18 @@ class {{ type.name|u.camel.title }}{% if (type.parent is not null and type.paren
      * @Serializer\XmlElement(cdata=false)
      */
     protected $element{{ element.name|u.camel.title }};
+{% else %}
+    /**
+     * @var array|{{ element.type not in primitive_type_list ? element.type|u.camel.title : element.type }}[]{{ not element.required ? '|null' }}
+     *
+     * @Serializer\Type("array<{{ element.type }}>")
+     * @Serializer\SerializedName("{{ element.name }}")
+     * @Serializer\Expose()
+     *
+     * @Serializer\XmlList(entry="{{ element.name }}", inline=true)
+     */
+    protected $element{{ element.name|u.camel.title }}List;
+{% endif %}
 
 {% endfor %}
 {% if (type.withContent or type.parent in primitive_type_list) %}
@@ -62,11 +75,13 @@ class {{ type.name|u.camel.title }}{% if (type.parent is not null and type.paren
     protected $content;
 
 {% endif %}
+{% if type.attributeList is not empty %}
+{% endif %}
 {% for attribute in type.attributeList %}
     /**
      * @return {{ attribute.type }}{{ not attribute.required ? '|null' }}
      */
-    public function getAttribute{{ attribute.name|u.camel.title }}(): {{ not attribute.required ? '?' }}{{ attribute.type not in simple_type_map ? attribute.type|u.camel.title : attribute.type }}
+    public function getAttribute{{ attribute.name|u.camel.title }}(): {{ not attribute.required ? '?' }}{{ attribute.type not in primitive_type_list ? attribute.type|u.camel.title : attribute.type }}
     {
         return $this->attribute{{ attribute.name|u.camel.title }};
     }
@@ -75,34 +90,66 @@ class {{ type.name|u.camel.title }}{% if (type.parent is not null and type.paren
      * @param {{ attribute.type }}{{ not attribute.required ? '|null' }} $attribute{{ attribute.name|u.camel.title }}
      * @return {{ type.name|u.camel.title }}
      */
-    public function setAttribute{{ attribute.name|u.camel.title }}({{ not attribute.required ? '?' }}{{ attribute.type not in simple_type_map ? attribute.type|u.camel.title : attribute.type }} $attribute{{ attribute.name|u.camel.title }}): {{ type.name|u.camel.title }}
+    public function setAttribute{{ attribute.name|u.camel.title }}({{ not attribute.required ? '?' }}{{ attribute.type not in primitive_type_list ? attribute.type|u.camel.title : attribute.type }} $attribute{{ attribute.name|u.camel.title }}): {{ type.name|u.camel.title }}
     {
         $this->attribute{{ attribute.name|u.camel.title }} = $attribute{{ attribute.name|u.camel.title }};
         return $this;
     }
 
 {% endfor %}
+{% if type.elementList is not empty %}
+{% endif %}
 {% for element in type.elementList %}
+{% if element.singular %}
     /**
-     * @return {{ element.type }}{{ not element.required ? '|null' }}
+     * @return {{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }}{{ not element.required ? '|null' }}
      */
-    public function getElement{{ element.name|u.camel.title }}(): {{ not element.required ? '?' }}{{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }}
+    public function getElement{{ element.name|u.camel.title }}(): {{ not element.required ? '?' }}{{ element.type not in primitive_type_list ? element.type|u.camel.title : element.type }}
     {
         return $this->element{{ element.name|u.camel.title }};
     }
 
     /**
-     * @param {{ element.type }}{{ not element.required ? '|null' }} $element{{ element.name|u.camel.title }}
+     * @param {{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }}{{ not element.required ? '|null' }} $element{{ element.name|u.camel.title }}
      * @return {{ type.name|u.camel.title }}
      */
-    public function setElement{{ element.name|u.camel.title }}({{ not element.required ? '?' }}{{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }} $element{{ element.name|u.camel.title }}): {{ type.name|u.camel.title }}
+    public function setElement{{ element.name|u.camel.title }}({{ not element.required ? '?' }}{{ element.type not in primitive_type_list ? element.type|u.camel.title : element.type }} $element{{ element.name|u.camel.title }}): {{ type.name|u.camel.title }}
     {
         $this->element{{ element.name|u.camel.title }} = $element{{ element.name|u.camel.title }};
         return $this;
     }
+{% else %}
+    /**
+     * @return array|{{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }}[]{{ not element.required ? '|null' }}
+     */
+    public function getElement{{ element.name|u.camel.title }}List(): {{ not element.required ? '?' }}array
+    {
+        return $this->element{{ element.name|u.camel.title }}List;
+    }
+
+    /**
+     * @param array|{{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }}[]{{ not element.required ? '|null' }} $element{{ element.name|u.camel.title }}List
+     * @return {{ type.name|u.camel.title }}
+     */
+    public function setElement{{ element.name|u.camel.title }}List({{ not element.required ? '?' }}array $element{{ element.name|u.camel.title }}List): {{ type.name|u.camel.title }}
+    {
+        $this->element{{ element.name|u.camel.title }}List = $element{{ element.name|u.camel.title }}List;
+        return $this;
+    }
+
+    /**
+     * @param {{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }}
+     * @return {{ type.name|u.camel.title }}
+     */
+    public function addElement{{ element.name|u.camel.title }}({{ element.type not in simple_type_map ? element.type|u.camel.title : element.type }} $element{{ element.name|u.camel.title }}): {{ type.name|u.camel.title }}
+    {
+        $this->element{{ element.name|u.camel.title }}List[] = $element{{ element.name|u.camel.title }};
+        return $this;
+    }
+{% endif %}
 
 {% endfor %}
-{% if (type.withContent or type.parent in primitive_type_list) %}
+{% if (type.withContent and type.parent in primitive_type_list) %}
     /**
      * @return {{ type.parent }}
      */

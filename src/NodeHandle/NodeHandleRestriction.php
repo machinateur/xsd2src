@@ -44,35 +44,13 @@ class NodeHandleRestriction extends NodeHandleAbstract
      */
     protected function handleContentType(DOMElement $element, Content\Type $subject): void
     {
-        $base = $element->getAttribute('base');
+        if ($subject->isWithContent()) {
+            $base = $element->getAttribute('base');
 
-        $subject->setParent($base);
-
-        // Look for restricted elements inside using a substitute $subject. Then remove the restricted elements.
-        $modelContent = new Content();
-
-        $modelType = new Content\TypeProxy($subject->getName(), $subject->isRoot());
-        $modelType->setParent($subject->getParent());
-        $modelType->setWithContent($subject->isWithContent());
-        $modelType->setContentReference($modelContent);
+            $subject->setParent($base);
+        }
 
         $this->getNodeHandleChain()
-            ->handleAll($element, $modelType);
-
-        $modelType->setContentReference(null);
-
-        $modelAttributeList = $modelType->getAttributeList();
-        foreach ($modelAttributeList as $modelAttribute) {
-            if (!$subject->hasAttribute($modelAttribute)) {
-                $subject->removeAttribute($modelAttribute);
-            }
-        }
-
-        $modelElementList = $modelType->getElementList();
-        foreach ($modelElementList as $modelElement) {
-            if (!$subject->hasElement($modelElement)) {
-                $subject->removeElement($modelElement);
-            }
-        }
+            ->handleAll($element, $subject);
     }
 }

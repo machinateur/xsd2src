@@ -20,7 +20,17 @@ class TypeMap implements TypeMapInterface
     /**
      * @var string[]
      */
-    protected array $typeList;
+    protected array $existingTypeList;
+
+    /**
+     * @var string[]
+     */
+    protected array $usedTypeList;
+
+    /**
+     * @var string[]
+     */
+    protected array $missingTypeList;
 
     /**
      * TypeMapSimple constructor.
@@ -31,7 +41,9 @@ class TypeMap implements TypeMapInterface
     {
         $this->typeMap = $typeMap;
         $this->defaultType = $defaultType;
-        $this->typeList = [];
+        $this->existingTypeList = [];
+        $this->usedTypeList = [];
+        $this->missingTypeList = [];
     }
 
     /**
@@ -66,12 +78,7 @@ class TypeMap implements TypeMapInterface
      */
     public function process(Content $content): TypeMapInterface
     {
-        $this->typeList = [];
-
-        $typeMap = array_keys($this->typeMap);
-        foreach ($typeMap as $type) {
-            $this->typeList[] = $type;
-        }
+        $this->resetTypeLists();
 
         $typeList = $content->getTypeList();
         foreach ($typeList as $type) {
@@ -83,18 +90,26 @@ class TypeMap implements TypeMapInterface
 
     /**
      * @param Content\Type $type
-     * @return TypeMapInterface
      */
-    public function processType(Content\Type $type): TypeMapInterface
+    public function processType(Content\Type $type): void
     {
-        $parent = $type->getParent();
-        if (null !== $parent && $type->isWithContent()) {
-            $parent = $this->findType($parent);
+        $name = $type->getName();
 
-            $type->setParent($parent);
+        $this->registerExistingType($name);
+
+        if ($type->isRoot()) {
+            $this->registerUsedType($name);
         }
 
-        $this->typeList[] = $type->getName();
+        $parent = $type->getParent();
+        if (null !== $parent && $type->isWithContent()) {
+            // Look for simple type...
+            $parent = $this->findType($parent, true);
+
+            $type->setParent($parent);
+
+            $this->registerUsedType($parent);
+        }
 
         $elementList = $type->getElementList();
         foreach ($elementList as $element) {
@@ -105,36 +120,32 @@ class TypeMap implements TypeMapInterface
         foreach ($attributeList as $attribute) {
             $this->processAttribute($attribute);
         }
-
-        return $this;
     }
 
     /**
      * @param Content\Type\Element $element
-     * @return TypeMapInterface
      */
-    public function processElement(Content\Type\Element $element): TypeMapInterface
+    public function processElement(Content\Type\Element $element): void
     {
         $type = $element->getType();
         $type = $this->findType($type, false);
 
         $element->setType($type);
 
-        return $this;
+        $this->registerUsedType($type);
     }
 
     /**
      * @param Content\Type\Attribute $attribute
-     * @return TypeMapInterface
      */
-    public function processAttribute(Content\Type\Attribute $attribute): TypeMapInterface
+    public function processAttribute(Content\Type\Attribute $attribute): void
     {
         $type = $attribute->getType();
         $type = $this->findType($type, true);
 
         $attribute->setType($type);
 
-        return $this;
+        $this->registerUsedType($type);
     }
 
     /**
@@ -144,9 +155,6 @@ class TypeMap implements TypeMapInterface
      */
     protected function findType(string $type, bool $useDefault = true): string
     {
-        // Always add to type list.
-        $this->typeList[] = $type;
-
         if (isset($this->typeMap[$type])) {
             // Avoid circular reference and thereby endless loop.
             $typePath = [];
@@ -156,6 +164,8 @@ class TypeMap implements TypeMapInterface
                 $type = $this->typeMap[$type];
             }
         } elseif ($useDefault) {
+            $this->registerMissingType($type);
+
             $type = $this->getDefaultType();
         }
 
@@ -163,52 +173,112 @@ class TypeMap implements TypeMapInterface
     }
 
     /**
-     * @param string $type
-     * @param bool $useDefault
-     * @return bool
-     */
-    protected function checkType(string $type, bool $useDefault = true): bool
-    {
-        return $type !== $this->findType($type, $useDefault);
-    }
-
-    /**
+     * @param Content $content
      * @return string[]
      */
-    public function getWarnMessageList(Content $content): array
+    public function getWarningList(Content $content): array
     {
-        $warnMessageList = [];
+        /** @var string[] $usedTypeList */
+        $usedTypeList = $this->usedTypeList;
+        /** @var string[] $missingTypeList */
+        $missingTypeList = $this->missingTypeList;
+
+        /** @var string[] $existingTypeList */
+        $existingTypeList = array_merge(array_keys($this->typeMap), $this->existingTypeList);
+
+        $warningList = [];
 
         $typeList = $content->getTypeList();
         foreach ($typeList as $type) {
-            // Find parents that are not in types.
+            $name = $type->getName();
+
+            // Find parents that do not exist.
             $parent = $type->getParent();
-            if (null !== $parent && !in_array($parent, $this->typeList, true)) {
-                $warnMessageList[] = 'For type "' . $type->getName() . '": The parent "' . $parent . '" is not defined.';
+            if (null !== $parent && !in_array($parent, $existingTypeList, true)) {
+                $warningList[] = 'For type "' . $name . '": The parent type "' . $parent . '" is not defined.';
             }
 
-            // Find types that are not used (?).
-            if (!in_array($type->getName(), $this->typeList, true) && (!$type->isRoot() || !$type->isWithContent())) {
-                $warnMessageList[] = 'For type "' . $type->getName() . '": The type seems to be unused.';
+            if (null === $parent && $type->isWithContent()) {
+                $warningList[] = 'For type "' . $name . '": The parent type "null" is not allowed for a (simple) type.';
+            }
+
+
+            // Find types that are not used.
+            if (!in_array($name, $usedTypeList, true)) {
+                $warningList[] = 'For type "' . $name . '": The type is unused.';
             }
 
             $elementList = $type->getElementList();
             foreach ($elementList as $element) {
-                // Find element types that are not in types.
-                if (!in_array($element->getType(), $this->typeList, true)) {
-                    $warnMessageList[] = 'For type "' . $type->getName() . '", element "' . $element->getType() . '": The type is not defined.';
+                // Find element types that do not exist.
+                if (!in_array($element->getType(), $existingTypeList, true)) {
+                    if ($type->isWithContent()) {
+                        $warningList[] = 'For type "' . $name . '", element "' . $element->getName() . '" with type "' . $element->getType() . '": The type is not mapped.';
+                    } else {
+                        $warningList[] = 'For type "' . $name . '", element "' . $element->getName() . '" with type "' . $element->getType() . '": The type is not defined.';
+                    }
                 }
             }
 
             $attributeList = $type->getAttributeList();
             foreach ($attributeList as $attribute) {
-                // Find attribute types that are not in types.
-                if (!in_array($attribute->getType(), $this->typeList, true)) {
-                    $warnMessageList[] = 'For type "' . $type->getName() . '", attribute "' . $attribute->getType() . '": The type is not defined.';
+                // Find attribute types that do not exist.
+                if (!in_array($attribute->getType(), $existingTypeList, true)) {
+                    $warningList[] = 'For type "' . $name . '", attribute "' . $attribute->getName() . '" with type "' . $attribute->getType() . '": The type is not defined.';
                 }
+            }
+
+            if (0 === count($elementList) && 0 === count($attributeList) && $type->isWithContent()) {
+                $warningList[] = 'For type "' . $name . '": The (simple) type is redundant.';
             }
         }
 
-        return $warnMessageList;
+        // Add warnings about the (simple) types that are not mapped.
+        foreach ($missingTypeList as $missingType) {
+            $warningList[] = 'For type "' . $missingType . '": The (simple) type is not mapped.';
+        }
+
+        return $warningList;
+    }
+
+    protected
+    function resetTypeLists(): void
+    {
+        $this->missingTypeList = [];
+        $this->usedTypeList = [];
+        $this->missingTypeList = [];
+    }
+
+    /**
+     * @param string $type
+     */
+    protected
+    function registerExistingType(string $type): void
+    {
+        if (!in_array($type, $this->existingTypeList, true)) {
+            $this->existingTypeList[] = $type;
+        }
+    }
+
+    /**
+     * @param string $type
+     */
+    protected
+    function registerUsedType(string $type): void
+    {
+        if (!in_array($type, $this->usedTypeList, true)) {
+            $this->usedTypeList[] = $type;
+        }
+    }
+
+    /**
+     * @param string $type
+     */
+    protected
+    function registerMissingType(string $type): void
+    {
+        if (!in_array($type, $this->usedTypeList, true)) {
+            $this->missingTypeList[] = $type;
+        }
     }
 }

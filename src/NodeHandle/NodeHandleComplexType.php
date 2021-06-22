@@ -51,7 +51,7 @@ class NodeHandleComplexType extends NodeHandleAbstract
     {
         $name = $element->getAttribute('name');
 
-        $modelType = new Content\TypeProxy($name, true);
+        $modelType = new Content\TypeProxy($name, false);
         $modelType->setContentReference($subject);
 
         $this->getNodeHandleChain()

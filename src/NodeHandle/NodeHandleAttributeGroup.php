@@ -14,53 +14,9 @@ use LogicException;
 class NodeHandleAttributeGroup extends NodeHandleAbstract
 {
     use Addon\QueryTrait;
+    use Addon\ContentCacheTrait;
 
     protected static ?string $identifier = 'attribute_group';
-
-    private ?Content $contentCache;
-
-    /**
-     * NodeHandleAttributeGroup constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->contentCache = null;
-    }
-
-    /**
-     * @return Content
-     */
-    public function getContentCache(): Content
-    {
-        if (!$this->hasContentCache()) {
-            $this->setContentCache(
-                new Content()
-            );
-        }
-
-        return $this->contentCache;
-    }
-
-    /**
-     * @param Content $contentCache
-     * @return NodeHandleAttributeGroup
-     */
-    public function setContentCache(Content $contentCache): NodeHandleAttributeGroup
-    {
-        $this->contentCache = $contentCache;
-        return $this;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasContentCache(): bool
-    {
-        return null !== $this->contentCache;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * @inheritDoc
@@ -77,6 +33,11 @@ class NodeHandleAttributeGroup extends NodeHandleAbstract
     public function handle(DOMElement $element, ?object $subject = null): void
     {
         switch (true) {
+
+            // If coming from schema...
+            case ($subject instanceof Content):
+                $this->handleContent($element, $subject);
+                break;
 
             // If coming from element...
             case ($subject instanceof Content\Type):
@@ -104,6 +65,7 @@ class NodeHandleAttributeGroup extends NodeHandleAbstract
 
         $modelType->setContentReference(null);
 
+        // Use the cache instead of the subject.
         $modelContent->addType($modelType);
     }
 
