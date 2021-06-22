@@ -1,5 +1,7 @@
 # xsd2src
 
+Convert an xsd schema to source code of any type and format.
+
 ## Installation
 
 ```bash
