@@ -181,7 +181,7 @@ class Xsd2SrcCommand extends Command
         }
 
         $optionZip = $input->getOption('zip');
-        if (!str_ends_with($optionZip, '.zip')) {
+        if (null !== $optionZip && !str_ends_with($optionZip, '.zip')) {
             $optionZip = $optionZip . '.zip';
 
             $output->writeln('! Add ".zip" suffix ("' . $optionZip . '")...');
