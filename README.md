@@ -47,6 +47,15 @@ Options (Symfony related):
 
 ```
 
+## List of supported source type/format
+
+* PHP (7.4) with jms-serializer annotations
+* *more coming soon...*
+
+## The web version
+
+Currently, there is no web version of this tool. I hope this will be available some day.
+
 ## Documentation
 
 > This is a work-in-progress tool.\
@@ -64,10 +73,10 @@ The following table describes the supported structure variation:
 | `NodeHandleComplexContent`  | [ ]   | [x]       | `complexContent`            |
 | `NodeHandleSimpleType`      | [x]   | [x]       | `simpleType`                |
 | `NodeHandleSimpleContent`   | [ ]   | [x]       | `simpleContent`             |
-| `NodeHandleExtension`       | [ ]   | [x]       | `Extension`                 |
-| `NodeHandleRestriction`     | [ ]   | [x]       | `Restriction`               |
-| `NodeHandleElement`         | [x]   | [x]       | `Element`                   |
-| `NodeHandleAttribute`       | [ ]   | [x]       | `Attribute`                 |
+| `NodeHandleExtension`       | [ ]   | [x]       | `extension`                 |
+| `NodeHandleRestriction`     | [ ]   | [x]       | `restriction`               |
+| `NodeHandleElement`         | [x]   | [x]       | `element`                   |
+| `NodeHandleAttribute`       | [ ]   | [x]       | `attribute`                 |
 | `NodeHandleIndicator`       | [ ]   | [x]       | `all` `choice` `sequence`   |
 | `NodeHandleGroup`           | [x]   | [x]       | `group`                     |
 | `NodeHandleAttributeGroup`  | [x]   | [x]       | `attributeGroup`            |
