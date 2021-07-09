@@ -5,7 +5,7 @@ Convert an xsd schema to source code of any type and format.
 ## Installation
 
 ```bash
-git clone --depth 1 --branch 0.1 https://github.com/machinateur/xsd2src ./xsd2src
+git clone --depth 1 --branch 0.1.0 https://github.com/machinateur/xsd2src ./xsd2src
 cd ./xsd2src
 composer install
 php bin/console xsd2src -h
