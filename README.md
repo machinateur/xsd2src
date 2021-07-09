@@ -25,13 +25,17 @@ Arguments:
   output                            Set the output path.
   extension                         Set the file extension.
   context                           Set the context pathname.
-  view                              Set the twig view to use. Default to "xsd2src.{extension}.twig".
+  view                              Set the twig view to use. Default to "xsd2src.{$extension}.twig".
 
 Options:
   -i, --initialize|--no-initialize  Decide whether to initialize configuration or not. Default to "false".
   -r, --re                          Set to re-initialize the existing configuration. Default to "false".
   -x, --with=WITH                   Add one or more extra xsd. (multiple values allowed)
-  -z, --zip=ZIP                     Decide whether to compress the output as archive or not. Default to "false".
+  -s, --schema=SCHEMA               Set the schema pathname to validate input. Used for both, {$input} and extra input (using --with flag).
+                                    Should point to a local copy of "https://www.w3.org/2001/XMLSchema.xsd".
+  -z, --zip=ZIP                     Decide whether to compress the output as archive or not, the value is the name of the archive.
+
+Options (Symfony related):
   -h, --help                        Display help for the given command. When no command is given display help for the list command
   -q, --quiet                       Do not output any message
   -V, --version                     Display this application version

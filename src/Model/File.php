@@ -37,7 +37,9 @@ class File implements FileInterface
      */
     public function getDocument(): DOMDocument
     {
-        $this->validate($pathname = $this->getPathname());
+        $this->validate();
+
+        $pathname = $this->getPathname();
 
         $document = new DOMDocument('1.0', 'utf-8');
         if (!$document->load($pathname)) {
@@ -47,15 +49,12 @@ class File implements FileInterface
         return $document;
     }
 
-    /**
-     * @param string $pathname
-     */
-    protected function validate(string $pathname): void
+    protected function validate(): void
     {
-        if (file_exists($pathname) && is_file($pathname)) {
-            return;
-        }
+        $pathname = $this->getPathname();
 
-        throw new LogicException('The pathname must be a file.');
+        if (!(file_exists($pathname) && is_file($pathname))) {
+            throw new LogicException('The pathname must be a file.');
+        }
     }
 }

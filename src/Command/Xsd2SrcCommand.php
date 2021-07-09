@@ -5,6 +5,7 @@ namespace App\Command;
 use App\Model\Data\Content;
 use App\Model\File;
 use App\Model\FileInterface;
+use App\Model\FileWithSchema;
 use App\Service\DataService;
 use App\TypeMap\TypeMap;
 use RuntimeException;
@@ -82,15 +83,20 @@ class Xsd2SrcCommand extends Command
                 null
             )
             ->addArgument('view', InputArgument::OPTIONAL,
-                'Set the twig view to use. Default to "xsd2src.{extension}.twig".',
+                'Set the twig view to use. Default to "xsd2src.{$extension}.twig".',
                 null
             )
             ->addOption('with', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Add one or more extra xsd.',
                 []
             )
+            ->addOption('schema', 's', InputOption::VALUE_REQUIRED,
+                'Set the schema pathname to validate input. Used for both, {$input} and extra input (using --with flag).'
+                . PHP_EOL . 'Should point to a local copy of "https://www.w3.org/2001/XMLSchema.xsd".',
+                null
+            )
             ->addOption('zip', 'z', InputOption::VALUE_REQUIRED,
-                'Decide whether to compress the output as archive or not. Default to "false".',
+                'Decide whether to compress the output as archive or not, the value is the name of the archive.',
                 null
             );
     }
@@ -180,6 +186,21 @@ class Xsd2SrcCommand extends Command
             }
         }
 
+        /** @var string|null $optionSchema */
+        $optionSchema = $input->getOption('schema');
+        if (null !== $optionSchema) {
+            if (!$this->hasSchema($optionSchema)) {
+                $output->writeln('! Option "schema" ("' . $optionSchema . '") not found.');
+
+                return Command::FAILURE;
+            } elseif (!str_ends_with($optionSchema, '.xsd')) {
+                $output->writeln('! Option "schema" with extension "xsd" not found.');
+            }
+
+            $output->writeln('! Option "schema" ("' . $optionSchema . '") found.');
+        }
+
+        /** @var string|null $optionZip */
         $optionZip = $input->getOption('zip');
         if (null !== $optionZip && !str_ends_with($optionZip, '.zip')) {
             $optionZip = $optionZip . '.zip';
@@ -216,7 +237,7 @@ class Xsd2SrcCommand extends Command
             $output->write('> Parse "' . $argumentInput . '"...');
 
             $content = $this->service->getModel($typeMap,
-                $this->getFile($argumentInput)
+                $this->getFile($argumentInput, $optionSchema)
                     ->getDocument()
             );
 
@@ -225,7 +246,7 @@ class Xsd2SrcCommand extends Command
             foreach ($optionWith as $optionWithValue) {
                 $output->write('> Parse "' . $optionWithValue . '"...');
                 $this->service->walk($content, $typeMap,
-                    $this->getFile($optionWithValue)
+                    $this->getFile($optionWithValue, $optionSchema)
                         ->getDocument()
                 );
                 $output->writeln(' done!');
@@ -308,6 +329,15 @@ class Xsd2SrcCommand extends Command
     }
 
     /**
+     * @param string $optionSchema
+     * @return bool
+     */
+    private function hasSchema(string $optionSchema): bool
+    {
+        return file_exists($optionSchema) && is_file($optionSchema);
+    }
+
+    /**
      * @param array $optionWith
      * @return bool
      */
@@ -328,10 +358,16 @@ class Xsd2SrcCommand extends Command
 
     /**
      * @param string $pathname
+     * @param string|null $schemaPathname
      * @return FileInterface
      */
-    private function getFile(string $pathname): FileInterface
+    private function getFile(string $pathname, ?string $schemaPathname = null): FileInterface
     {
+        // Only if there is a schema pathname given.
+        if (null !== $schemaPathname) {
+            return new FileWithSchema($pathname, $schemaPathname);
+        }
+
         return new File($pathname);
     }
 
