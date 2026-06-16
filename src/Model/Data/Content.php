@@ -23,6 +23,8 @@
  * SOFTWARE.
  */
 
+declare(strict_types=1);
+
 namespace App\Model\Data;
 
 use App\Model\Data\Content\Type;

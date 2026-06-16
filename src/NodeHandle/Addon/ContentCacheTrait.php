@@ -23,6 +23,8 @@
  * SOFTWARE.
  */
 
+declare(strict_types=1);
+
 namespace App\NodeHandle\Addon;
 
 use App\Model\Data\Content;
