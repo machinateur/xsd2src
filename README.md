@@ -1,14 +1,20 @@
 # xsd2src
 
-Convert an xsd schema to source code of any type and format.
+Convert any xsd schema to source code of any type and format.
+
+Comes with PHP templates included.
+
+## Requirements
+
+- PHP 8.4
 
 ## Installation
 
 ```bash
-git clone --depth 1 --branch 0.1.0 https://github.com/machinateur/xsd2src ./xsd2src
+git clone --depth 1 --branch 0.2.0 https://github.com/machinateur/xsd2src ./xsd2src
 cd ./xsd2src
 composer install
-php bin/console xsd2src -h
+./xsd2src -h
 ```
 
 ## Usage
@@ -44,17 +50,12 @@ Options (Symfony related):
   -e, --env=ENV                     The Environment name. [default: "dev"]
       --no-debug                    Switch off debug mode.
   -v|vv|vvv, --verbose              Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug
-
 ```
 
 ## List of supported source type/format
 
-* PHP (7.4) with jms-serializer annotations
+* PHP (language level 7.4) with jms-serializer annotations
 * *more coming soon...*
-
-## The web version
-
-Currently, there is no web version of this tool. I hope this will be available some day.
 
 ## Documentation
 
