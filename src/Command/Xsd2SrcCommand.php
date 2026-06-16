@@ -32,6 +32,7 @@ use App\Model\FileWithSchema;
 use App\Service\DataService;
 use App\TypeMap\TypeMap;
 use RuntimeException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -44,6 +45,7 @@ use function Symfony\Component\String\u;
  * Class XsdCommand
  * @package App\Command
  */
+#[AsCommand('xsd2src')]
 class Xsd2SrcCommand extends Command
 {
     /**
@@ -55,8 +57,6 @@ class Xsd2SrcCommand extends Command
      * @var string
      */
     private const CTX_SIMPLE_TYPE_MAP = 'simple_type_map';
-
-    protected static $defaultName = 'xsd2src';
 
     private Environment $twig;
 

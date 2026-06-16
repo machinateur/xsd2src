@@ -2,7 +2,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2021-2021 machinateur
+ * Copyright (c) 2021-2026 machinateur
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,38 +23,11 @@
  * SOFTWARE.
  */
 
-namespace App\DependencyInjection\Compiler;
+declare(strict_types=1);
 
-use App\Service\DataService;
-use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Reference;
+\define('APP_NAME', 'xsd2src');
+\define('APP_VERSION', '0.1.0');
 
-/**
- * Class NodeHandlePass
- * @package App\DependencyInjection\Compiler
- */
-final class NodeHandlePass implements CompilerPassInterface
-{
-    /**
-     * @var string
-     */
-    public const TAG_NAME = 'app.node_handle';
-
-    /**
-     * @inheritDoc
-     */
-    public function process(ContainerBuilder $container)
-    {
-        if ($container->has(DataService::class)) {
-            $definition = $container->findDefinition(DataService::class);
-
-            $taggedServices = $container->findTaggedServiceIds(self::TAG_NAME);
-            foreach ($taggedServices as $serviceId => $tags) {
-                $definition->addMethodCall('addNodeHandle', [
-                    new Reference($serviceId),
-                ]);
-            }
-        }
-    }
-}
+// Additional information to be used in the application header.
+\define('APP_AUTHOR', 'machinateur');
+\define('APP_WEBSITE', 'https://github.com/machinateur/xsd2src');
