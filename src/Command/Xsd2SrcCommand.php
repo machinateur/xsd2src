@@ -2,7 +2,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2021-2021 machinateur
+ * Copyright (c) 2021-2026 machinateur
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,8 @@
  * SOFTWARE.
  */
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Model\Data\Content;
@@ -32,6 +34,7 @@ use App\Model\FileWithSchema;
 use App\Service\DataService;
 use App\TypeMap\TypeMap;
 use RuntimeException;
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -44,6 +47,7 @@ use function Symfony\Component\String\u;
  * Class XsdCommand
  * @package App\Command
  */
+#[AsCommand('xsd2src')]
 class Xsd2SrcCommand extends Command
 {
     /**
@@ -55,8 +59,6 @@ class Xsd2SrcCommand extends Command
      * @var string
      */
     private const CTX_SIMPLE_TYPE_MAP = 'simple_type_map';
-
-    protected static $defaultName = 'xsd2src';
 
     private Environment $twig;
 
