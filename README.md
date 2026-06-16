@@ -1,8 +1,9 @@
-# xsd2src
+# schema2src
 
-Convert any xsd schema to source code of any type and format.
+Convert any _XSD_ and _PDL_ schema to source code of any type and format.
 
-Comes with PHP templates included.
+All that's needed is a Twig template to convert the internal data structure to types and namespaces (files and directories).
+ Comes with PHP templates included.
 
 ## Requirements
 
@@ -11,7 +12,7 @@ Comes with PHP templates included.
 ## Installation
 
 ```bash
-git clone --depth 1 --branch 0.2.0 https://github.com/machinateur/xsd2src ./xsd2src
+git clone --depth 1 --branch 0.3.0 https://github.com/machinateur/xsd2src ./xsd2src
 cd ./xsd2src
 composer install
 ./xsd2src -h

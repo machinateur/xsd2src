@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 use App\Command\Xsd2SrcCommand;
 use App\NodeHandle;
-use App\Service\DataService;
+use App\Service\XsdDataService;
 use Symfony\Component\Console\Application;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Twig\Environment;
@@ -59,7 +59,7 @@ $twig = new Environment(new FilesystemLoader(__DIR__ . '/templates'), [
     // TODO: Use cache to speed up operations, also for the model (new feature).
     'cache'      => false,
 ]);
-$service = new DataService($twig);
+$service = new XsdDataService($twig);
 
 /** @var array<class-string<NodeHandle\NodeHandleInterface>> */
 $nodeHandles = [

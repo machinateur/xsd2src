@@ -25,9 +25,13 @@
 
 declare(strict_types=1);
 
-\define('APP_NAME', 'xsd2src');
-\define('APP_VERSION', '0.3.0');
+namespace App\Model;
 
-// Additional information to be used in the application header.
-\define('APP_AUTHOR', 'machinateur');
-\define('APP_WEBSITE', 'https://github.com/machinateur/xsd2src');
+class PdlJsonFile implements PdlFileInterface
+{
+    public function getObject(): \ArrayObject
+    {
+        // TODO: Load JSON content file contents.
+        return new \ArrayObject();
+    }
+}

@@ -31,10 +31,10 @@ use DOMDocument;
 use LogicException;
 
 /**
- * Class File
+ * Class XsdFile
  * @package App\Model
  */
-class File implements FileInterface
+class XsdFile implements XsdFileInterface
 {
     private string $pathname;
 

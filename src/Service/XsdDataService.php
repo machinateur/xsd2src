@@ -41,10 +41,10 @@ use Twig\Environment;
 use Twig\Error\Error as TwigError;
 
 /**
- * Class DataService
+ * Class XsdDataService
  * @package App\Service
  */
-class DataService
+class XsdDataService
 {
     private Environment $twig;
 
@@ -54,7 +54,7 @@ class DataService
     private array $nodeHandleList;
 
     /**
-     * DataService constructor.
+     * XsdDataService constructor.
      * @param Environment $twig
      */
     public function __construct(Environment $twig)
@@ -65,9 +65,9 @@ class DataService
 
     /**
      * @param NodeHandle\NodeHandleInterface $nodeHandle
-     * @return DataService
+     * @return XsdDataService
      */
-    public function addNodeHandle(NodeHandle\NodeHandleInterface $nodeHandle): DataService
+    public function addNodeHandle(NodeHandle\NodeHandleInterface $nodeHandle): XsdDataService
     {
         $this->nodeHandleList[$nodeHandle->getIdentifier()] = $nodeHandle;
         return $this;

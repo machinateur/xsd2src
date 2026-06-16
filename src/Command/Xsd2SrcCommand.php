@@ -28,10 +28,13 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Model\Data\Content;
-use App\Model\File;
-use App\Model\FileInterface;
-use App\Model\FileWithSchema;
-use App\Service\DataService;
+use App\Model\PdlFile;
+use App\Model\PdlFileInterface;
+use App\Model\PdlJsonFile;
+use App\Model\XsdFile;
+use App\Model\XsdFileInterface;
+use App\Model\XsdFileWithSchema;
+use App\Service\XsdDataService;
 use App\TypeMap\TypeMap;
 use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -60,16 +63,18 @@ class Xsd2SrcCommand extends Command
      */
     private const CTX_SIMPLE_TYPE_MAP = 'simple_type_map';
 
+    private static $supportedDrivers = ['xsd', 'pdl', 'pdl-json'];
+
     private Environment $twig;
 
-    private DataService $service;
+    private XsdDataService $service;
 
     /**
      * Xsd2SrcCommand constructor.
      * @param Environment $twig
-     * @param DataService $service
+     * @param XsdDataService $service
      */
-    public function __construct(Environment $twig, DataService $service)
+    public function __construct(Environment $twig, XsdDataService $service)
     {
         parent::__construct();
         $this->twig = $twig;
@@ -123,7 +128,12 @@ class Xsd2SrcCommand extends Command
             ->addOption('zip', 'z', InputOption::VALUE_REQUIRED,
                 'Decide whether to compress the output as archive or not, the value is the name of the archive.',
                 null
-            );
+            )
+            ->addOption('driver', 'd', InputOption::VALUE_REQUIRED,
+                '',
+                null
+            )
+        ;
     }
 
     private InputInterface $input;
@@ -233,6 +243,13 @@ class Xsd2SrcCommand extends Command
             $output->writeln('! Add ".zip" suffix ("' . $optionZip . '")...');
         }
 
+        $optionDriver = $input->getOption('driver');
+        if (null !== $optionDriver && !\in_array($optionDriver, self::$supportedDrivers, true)) {
+            $optionDriver = 'xsd';
+
+            $output->writeln('! Unknown driver, fallback to "' . $optionDriver . '"...');
+        }
+
         $this->input = $input;
         $this->output = $output;
 
@@ -261,19 +278,19 @@ class Xsd2SrcCommand extends Command
         try {
             $output->write('> Parse "' . $argumentInput . '"...');
 
-            $content = $this->service->getModel($typeMap,
-                $this->getFile($argumentInput, $optionSchema)
-                    ->getDocument()
-            );
+            $match = fn (string $argumentInput, ?string $optionSchema) => match ($argumentInput) {
+                'pdl'       => $this->getFilePdl($argumentInput, false),
+                'pdl-json'  => $this->getFilePdl($argumentInput, true),
+                default     => $this->getFile($argumentInput, $optionSchema)
+                    ->getDocument(),
+            };
+            $content = $this->service->getModel($typeMap, $match($argumentInput, $optionSchema));
 
             $output->writeln(' done!');
 
             foreach ($optionWith as $optionWithValue) {
                 $output->write('> Parse "' . $optionWithValue . '"...');
-                $this->service->walk($content, $typeMap,
-                    $this->getFile($optionWithValue, $optionSchema)
-                        ->getDocument()
-                );
+                $this->service->walk($content, $typeMap, $match($optionWithValue, $optionSchema));
                 $output->writeln(' done!');
             }
 
@@ -384,16 +401,25 @@ class Xsd2SrcCommand extends Command
     /**
      * @param string $pathname
      * @param string|null $schemaPathname
-     * @return FileInterface
+     * @return XsdFileInterface
      */
-    private function getFile(string $pathname, ?string $schemaPathname = null): FileInterface
+    private function getFile(string $pathname, ?string $schemaPathname = null): XsdFileInterface
     {
         // Only if there is a schema pathname given.
         if (null !== $schemaPathname) {
-            return new FileWithSchema($pathname, $schemaPathname);
+            return new XsdFileWithSchema($pathname, $schemaPathname);
         }
 
-        return new File($pathname);
+        return new XsdFile($pathname);
+    }
+
+    private function getFilePdl(string $argumentInput, bool $useJson = false): PdlFileInterface
+    {
+        if ($useJson) {
+            return new PdlJsonFile($argumentInput);
+        }
+
+        return new PdlFile($argumentInput);
     }
 
     /**
