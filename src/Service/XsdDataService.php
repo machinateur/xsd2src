@@ -35,6 +35,7 @@ use App\Service\Scan\Scan;
 use App\Service\Scan\ScanFactory;
 use App\TypeMap\TypeMapInterface;
 use DOMDocument;
+use InvalidArgumentException;
 use LogicException;
 use RuntimeException;
 use Twig\Environment;
@@ -44,7 +45,7 @@ use Twig\Error\Error as TwigError;
  * Class XsdDataService
  * @package App\Service
  */
-class XsdDataService
+class XsdDataService implements DataServiceInterface
 {
     private Environment $twig;
 
@@ -79,8 +80,12 @@ class XsdDataService
      * @param string $documentElementName
      * @return Content
      */
-    public function getModel(TypeMapInterface $typeMap, DOMDocument $document, string $documentElementName = 'schema'): Content
+    public function getModel(TypeMapInterface $typeMap, $document, string $documentElementName = 'schema'): Content
     {
+        if ( ! $document instanceof DOMDocument) {
+            throw new InvalidArgumentException('The data has to be a of type "DOMDocument"!');
+        }
+
         return $this->walk(new Content(), $typeMap, $document, $documentElementName);
     }
 
@@ -94,10 +99,14 @@ class XsdDataService
     public function walk(
         Content $content,
         TypeMapInterface $typeMap,
-        DOMDocument $document,
+        $document,
         string $documentElementName = 'schema'
     ): Content
     {
+        if ( ! $document instanceof DOMDocument) {
+            throw new InvalidArgumentException('The data has to be a of type "DOMDocument"!');
+        }
+
         $content = ScanFactory::create()
             ->setSelectMode(Scan::SEL_ANY)
             ->setNodeHandleList(

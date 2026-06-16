@@ -34,6 +34,7 @@ use App\Model\PdlJsonFile;
 use App\Model\XsdFile;
 use App\Model\XsdFileInterface;
 use App\Model\XsdFileWithSchema;
+use App\Service\DataServiceInterface;
 use App\Service\XsdDataService;
 use App\TypeMap\TypeMap;
 use RuntimeException;
@@ -47,11 +48,11 @@ use Twig\Environment;
 use function Symfony\Component\String\u;
 
 /**
- * Class XsdCommand
+ * Class Schema2SrcCommand
  * @package App\Command
  */
-#[AsCommand('xsd2src')]
-class Xsd2SrcCommand extends Command
+#[AsCommand('schema2src')]
+class Schema2SrcCommand extends Command
 {
     /**
      * @var string
@@ -63,18 +64,21 @@ class Xsd2SrcCommand extends Command
      */
     private const CTX_SIMPLE_TYPE_MAP = 'simple_type_map';
 
-    private static $supportedDrivers = ['xsd', 'pdl', 'pdl-json'];
+    /**
+     * @var string[]
+     */
+    private static array $supportedDrivers = ['xsd', 'pdl', 'pdl-json'];
 
     private Environment $twig;
 
-    private XsdDataService $service;
+    private DataServiceInterface $service;
 
     /**
-     * Xsd2SrcCommand constructor.
+     * Schema2SrcCommand constructor.
      * @param Environment $twig
-     * @param XsdDataService $service
+     * @param DataServiceInterface $service
      */
-    public function __construct(Environment $twig, XsdDataService $service)
+    public function __construct(Environment $twig, DataServiceInterface $service)
     {
         parent::__construct();
         $this->twig = $twig;
@@ -90,48 +94,49 @@ class Xsd2SrcCommand extends Command
             ->setDescription('Create source from xsd.')
             ->addArgument('input', InputArgument::REQUIRED,
                 'Set the input pathname.',
-                null
+                null,
             )
             ->addArgument('output', InputArgument::REQUIRED,
                 'Set the output path.',
-                null
+                null,
             )
             ->addArgument('extension', InputArgument::REQUIRED,
                 'Set the file extension.',
-                null
+                null,
             )
             ->addArgument('context', InputArgument::REQUIRED,
                 'Set the context pathname.',
-                null
+                null,
             )
             ->addOption('initialize', 'i', InputOption::VALUE_NEGATABLE,
                 'Decide whether to initialize configuration or not. Default to "false".',
-                false
+                false,
             )
             ->addOption('re', 'r', InputOption::VALUE_NONE,
                 'Set to re-initialize the existing configuration. Default to "false".',
-                null
+                null,
             )
             ->addArgument('view', InputArgument::OPTIONAL,
-                'Set the twig view to use. Default to "xsd2src.{$extension}.twig".',
-                null
+                'Set the twig view to use. Default to "{$driver}2src.{$extension}.twig".',
+                null,
             )
             ->addOption('with', 'x', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
                 'Add one or more extra xsd.',
-                []
+                [],
             )
             ->addOption('schema', 's', InputOption::VALUE_REQUIRED,
                 'Set the schema pathname to validate input. Used for both, {$input} and extra input (using --with flag).'
-                . PHP_EOL . 'Should point to a local copy of "https://www.w3.org/2001/XMLSchema.xsd".',
-                null
+                . \PHP_EOL . 'Should point to a local copy of "https://www.w3.org/2001/XMLSchema.xsd".',
+                null,
             )
             ->addOption('zip', 'z', InputOption::VALUE_REQUIRED,
                 'Decide whether to compress the output as archive or not, the value is the name of the archive.',
-                null
+                null,
             )
             ->addOption('driver', 'd', InputOption::VALUE_REQUIRED,
-                '',
-                null
+                'Set the input driver to use. Supported values are: ' . \implode(self::$supportedDrivers) . '.',
+                'xsd',
+                self::$supportedDrivers,
             )
         ;
     }
@@ -144,8 +149,9 @@ class Xsd2SrcCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('xsd2src, Copyright (c) 2021-' . date('Y') . ' machinateur');
-        $output->writeln(' "Hello, thanks for using xsd2src!"');
+        $output->writeln('schema2src, Copyright (c) 2021-' . date('Y') . ' machinateur');
+        $output->writeln(' "Hello, thanks for using schema2src!"');
+        // TODO: Use `meta.php`-defined constants instead.
         $output->writeln('  https://github.com/machinateur/xsd2src');
         $output->writeln('');
 
@@ -198,14 +204,21 @@ class Xsd2SrcCommand extends Command
             $output->writeln('! Option "re" (true) found.');
         }
 
+        $optionDriver = $input->getOption('driver');
+        if (null !== $optionDriver && !\in_array($optionDriver, self::$supportedDrivers, true)) {
+            $optionDriver = 'xsd';
+
+            $output->writeln('! Unknown driver, fallback to "' . $optionDriver . '"...');
+        }
+
         /** @var string $argumentView */
         if (!$this->hasView($argumentView = $input->getArgument('view') ?? $argumentExtension)) {
             $output->writeln('! Argument "view" ("' . $argumentView . '") not found.');
 
-            if (!str_starts_with($argumentView, 'xsd2src.')) {
-                $argumentView = 'xsd2src.' . $argumentView;
+            if (!str_starts_with($argumentView, $optionDriver . '2src.')) {
+                $argumentView = $optionDriver . '2src.' . $argumentView;
 
-                $output->writeln('! Add "xsd2src." prefix ("' . $argumentView . '")...');
+                $output->writeln('! Add "' . $optionDriver . '2src." prefix ("' . $argumentView . '")...');
             }
 
             if (!str_ends_with($argumentView, '.twig')) {
@@ -243,13 +256,6 @@ class Xsd2SrcCommand extends Command
             $output->writeln('! Add ".zip" suffix ("' . $optionZip . '")...');
         }
 
-        $optionDriver = $input->getOption('driver');
-        if (null !== $optionDriver && !\in_array($optionDriver, self::$supportedDrivers, true)) {
-            $optionDriver = 'xsd';
-
-            $output->writeln('! Unknown driver, fallback to "' . $optionDriver . '"...');
-        }
-
         $this->input = $input;
         $this->output = $output;
 
@@ -279,8 +285,10 @@ class Xsd2SrcCommand extends Command
             $output->write('> Parse "' . $argumentInput . '"...');
 
             $match = fn (string $argumentInput, ?string $optionSchema) => match ($argumentInput) {
-                'pdl'       => $this->getFilePdl($argumentInput, false),
-                'pdl-json'  => $this->getFilePdl($argumentInput, true),
+                'pdl'       => $this->getFilePdl($argumentInput, false)
+                    ->getObject(),
+                'pdl-json'  => $this->getFilePdl($argumentInput, true)
+                    ->getObject(),
                 default     => $this->getFile($argumentInput, $optionSchema)
                     ->getDocument(),
             };

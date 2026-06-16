@@ -30,34 +30,11 @@ namespace App\Service;
 use App\Model\Data\Content;
 use App\TypeMap\TypeMapInterface;
 
-class PdlDataService implements DataServiceInterface
+interface DataServiceInterface
 {
-    /**
-     * @param \ArrayObject  $object
-     */
-    public function getModel(TypeMapInterface $typeMap, $object): Content
-    {
-        if ( ! $object instanceof \ArrayObject) {
-            throw new \InvalidArgumentException('The data has to be a of type "ArrayObject"!');
-        }
+    public function getModel(TypeMapInterface $typeMap, $data): Content;
 
-        return $this->walk(new Content(), $typeMap, $object);
-    }
+    public function walk(Content $content, TypeMapInterface $typeMap, $data): Content;
 
-    /**
-     * @param \ArrayObject $object
-     */
-    public function walk(Content $content, TypeMapInterface $typeMap, $object): Content
-    {
-        if ( ! $object instanceof \ArrayObject) {
-            throw new \InvalidArgumentException('The data has to be a of type "ArrayObject"!');
-        }
-
-        // TODO: Implement walk() method.
-    }
-
-    public function dump(Content $content, string $view, array $context, string $path, callable $nameFactory, bool $compress = false, ?string $compressName = null): bool
-    {
-        // TODO: Implement dump() method.
-    }
+    public function dump(Content $content, string $view, array $context, string $path, callable $nameFactory, bool $compress = false, ?string $compressName = null): bool;
 }

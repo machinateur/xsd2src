@@ -26,8 +26,10 @@
 
 declare(strict_types=1);
 
-use App\Command\Xsd2SrcCommand;
+use App\Command\Schema2SrcCommand;
 use App\NodeHandle;
+use App\Service\DelegateDataService;
+use App\Service\PdlDataService;
 use App\Service\XsdDataService;
 use Symfony\Component\Console\Application;
 use Symfony\Component\EventDispatcher\EventDispatcher;
@@ -59,7 +61,9 @@ $twig = new Environment(new FilesystemLoader(__DIR__ . '/templates'), [
     // TODO: Use cache to speed up operations, also for the model (new feature).
     'cache'      => false,
 ]);
-$service = new XsdDataService($twig);
+$serviceXsd    = new XsdDataService($twig);
+$servicePdl    = new PdlDataService($twig);
+$serviceCompat = new DelegateDataService($serviceXsd, $servicePdl);
 
 /** @var array<class-string<NodeHandle\NodeHandleInterface>> */
 $nodeHandles = [
@@ -78,17 +82,17 @@ $nodeHandles = [
     NodeHandle\NodeHandleAttribute::class,
 ];
 foreach ($nodeHandles as $nodeHandle) {
-    $service->addNodeHandle(
+    $serviceXsd->addNodeHandle(
             new $nodeHandle()
     );
 }
 
 $commands = [
-    new Xsd2SrcCommand($twig, $service),
+    new Schema2SrcCommand($twig, $serviceCompat),
 ];
 
 $application->setDispatcher($dispatcher);
 $application->addCommands($commands);
-$application->setDefaultCommand('xsd2src', true);
+$application->setDefaultCommand('schema2src', true);
 
 $application->run();

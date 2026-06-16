@@ -25,9 +25,10 @@
 
 declare(strict_types=1);
 
-\define('APP_NAME', 'xsd2src');
+\define('APP_NAME', 'schema2src');
 \define('APP_VERSION', '0.3.0');
 
 // Additional information to be used in the application header.
 \define('APP_AUTHOR', 'machinateur');
+// TODO: Update URL once the rename is complete.
 \define('APP_WEBSITE', 'https://github.com/machinateur/xsd2src');
